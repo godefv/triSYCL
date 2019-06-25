@@ -11,6 +11,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 include(FindTriSYCL)
+find_package(Threads)
 
 # Enable CTest
 include(CTest)
@@ -24,6 +25,7 @@ include_directories(${PROJECT_SOURCE_DIR}/tests/common) # All targets inherit SY
 add_subdirectory(tests)
 
 add_library(${PROJECT_NAME} INTERFACE)
+target_link_libraries(${PROJECT_NAME} INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
 # Package definition
 
@@ -72,32 +74,34 @@ install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION ${CMAKE_INSTALL_INC
 
 # CPACK
 
-if(EXISTS "/etc/debian_version")
-	set(DEBIAN TRUE CACHE BOOL "Enable debian specific options: 64-bit lib name and .deb generation")
+if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
+	if(EXISTS "/etc/debian_version")
+		set(DEBIAN TRUE CACHE BOOL "Enable debian specific options: 64-bit lib name and .deb generation")
+	endif()
+
+	if(DEBIAN)
+		set(CPACK_GENERATOR "TGZ;DEB" )
+	else()
+		set(CPACK_GENERATOR "TGZ" )
+	endif()
+
+	set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+
+	set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${TRISYCL_VERSION}-${CMAKE_HOST_SYSTEM_NAME}" )
+	set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}-Source" )
+
+	set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "SYCL reference implementation" )
+	set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
+	set(CPACK_PACKAGE_VENDOR "Neutral" )
+	set(CPACK_PACKAGE_CONTACT "${PROJECT_NAME} Maintainers")
+	set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.rst")
+
+	set(CPACK_PACKAGE_VERSION_MAJOR ${TRISYCL_VERSION_MAJOR} )
+	set(CPACK_PACKAGE_VERSION_MINOR ${TRISYCL_VERSION_MINOR} )
+	set(CPACK_PACKAGE_VERSION_PATCH ${TRISYCL_VERSION_PATCH} )
+
+	set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-dev")
+	set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "opencl-c-headers (>=1.2), build-essential, cmake")
+
+	include(CPack)
 endif()
-
-if(DEBIAN)
-	set(CPACK_GENERATOR "TGZ;DEB" )
-else()
-	set(CPACK_GENERATOR "TGZ" )
-endif()
-
-set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
-
-set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${TRISYCL_VERSION}-${CMAKE_HOST_SYSTEM_NAME}" )
-set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}-Source" )
-
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "SYCL reference implementation" )
-set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
-set(CPACK_PACKAGE_VENDOR "Neutral" )
-set(CPACK_PACKAGE_CONTACT "${PROJECT_NAME} Maintainers")
-set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.rst")
-
-set(CPACK_PACKAGE_VERSION_MAJOR ${TRISYCL_VERSION_MAJOR} )
-set(CPACK_PACKAGE_VERSION_MINOR ${TRISYCL_VERSION_MINOR} )
-set(CPACK_PACKAGE_VERSION_PATCH ${TRISYCL_VERSION_PATCH} )
-
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-dev")
-set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "opencl-c-headers (>=1.2), build-essential, cmake")
-
-include(CPack)
